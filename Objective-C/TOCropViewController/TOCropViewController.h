@@ -103,6 +103,12 @@
 @property (nonatomic, assign) CGFloat minimumAspectRatio;
 
 /**
+ The bottom inset for the CropView.
+ This allows us to hide the library's toolbar and add our own.
+ */
+@property (nonatomic, assign) CGFloat bottomInset;
+
+/**
  The view controller's delegate that will receive the resulting
  cropped image, as well as crop information.
  */

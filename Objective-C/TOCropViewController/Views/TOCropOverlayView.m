@@ -36,6 +36,13 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
 @property (nonatomic, strong) NSArray *bottomRightLineViews;
 @property (nonatomic, strong) NSArray *topRightLineViews;
 
+@property (nonatomic, strong) UIImageView *topLeftImageView;
+@property (nonatomic, strong) UIImageView *topRightImageView;
+@property (nonatomic, strong) UIImageView *bottomLeftImageView;
+@property (nonatomic, strong) UIImageView *bottomRightImageView;
+@property (nonatomic, strong) UIImageView *leftMiddleImageView;
+@property (nonatomic, strong) UIImageView *rightMiddleImageView;
+
 @end
 
 @implementation TOCropOverlayView
@@ -58,10 +65,40 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
 
     _outerLineViews     = @[newLineView(), newLineView(), newLineView(), newLineView()];
     
-    _topLeftLineViews   = @[newLineView(), newLineView()];
-    _bottomLeftLineViews = @[newLineView(), newLineView()];
-    _topRightLineViews  = @[newLineView(), newLineView()];
-    _bottomRightLineViews = @[newLineView(), newLineView()];
+    //Initialize corner image views
+    _topLeftImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    _topRightImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    _bottomLeftImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    _bottomRightImageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+
+    _topLeftImageView.image = [[UIImage imageNamed:@"star"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    _topRightImageView.image = [[UIImage imageNamed:@"star"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    _bottomLeftImageView.image = [[UIImage imageNamed:@"star"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    _bottomRightImageView.image = [[UIImage imageNamed:@"star"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+
+    UIColor *cornerTintColor = [UIColor colorNamed:@"AccentColor"];
+    _topLeftImageView.tintColor = cornerTintColor;
+    _topRightImageView.tintColor = cornerTintColor;
+    _bottomLeftImageView.tintColor = cornerTintColor;
+    _bottomRightImageView.tintColor = cornerTintColor;
+
+    [self addSubview:_topLeftImageView];
+    [self addSubview:_topRightImageView];
+    [self addSubview:_bottomLeftImageView];
+    [self addSubview:_bottomRightImageView];
+    
+    //Initialize middle image views
+    _leftMiddleImageView = [self createNewImageView];
+    _rightMiddleImageView = [self createNewImageView];
+
+    _leftMiddleImageView.image = [[UIImage imageNamed:@"star"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+    _rightMiddleImageView.image = [[UIImage imageNamed:@"star"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
+
+    _leftMiddleImageView.tintColor = cornerTintColor;
+    _rightMiddleImageView.tintColor = cornerTintColor;
+
+    [self addSubview:_leftMiddleImageView];
+    [self addSubview:_rightMiddleImageView];
     
     self.displayHorizontalGridLines = YES;
     self.displayVerticalGridLines = YES;
@@ -102,34 +139,16 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
         lineView.frame = frame;
     }
     
-    //corner liness
-    NSArray *cornerLines = @[self.topLeftLineViews, self.topRightLineViews, self.bottomRightLineViews, self.bottomLeftLineViews];
-    for (NSInteger i = 0; i < 4; i++) {
-        NSArray *cornerLine = cornerLines[i];
-        
-        CGRect verticalFrame = CGRectZero, horizontalFrame = CGRectZero;
-        switch (i) {
-            case 0: //top left
-                verticalFrame = (CGRect){-3.0f,-3.0f,3.0f,kTOCropOverLayerCornerWidth+3.0f};
-                horizontalFrame = (CGRect){0,-3.0f,kTOCropOverLayerCornerWidth,3.0f};
-                break;
-            case 1: //top right
-                verticalFrame = (CGRect){boundsSize.width,-3.0f,3.0f,kTOCropOverLayerCornerWidth+3.0f};
-                horizontalFrame = (CGRect){boundsSize.width-kTOCropOverLayerCornerWidth,-3.0f,kTOCropOverLayerCornerWidth,3.0f};
-                break;
-            case 2: //bottom right
-                verticalFrame = (CGRect){boundsSize.width,boundsSize.height-kTOCropOverLayerCornerWidth,3.0f,kTOCropOverLayerCornerWidth+3.0f};
-                horizontalFrame = (CGRect){boundsSize.width-kTOCropOverLayerCornerWidth,boundsSize.height,kTOCropOverLayerCornerWidth,3.0f};
-                break;
-            case 3: //bottom left
-                verticalFrame = (CGRect){-3.0f,boundsSize.height-kTOCropOverLayerCornerWidth,3.0f,kTOCropOverLayerCornerWidth};
-                horizontalFrame = (CGRect){-3.0f,boundsSize.height,kTOCropOverLayerCornerWidth+3.0f,3.0f};
-                break;
-        }
-        
-        [cornerLine[0] setFrame:verticalFrame];
-        [cornerLine[1] setFrame:horizontalFrame];
-    }
+    //corner images
+    CGFloat cornerImageWidth = 24.0f;  //Hardcoded width
+    CGFloat cornerImageHeight = 24.0f; //Hardcoded height
+    
+    _topLeftImageView.frame = CGRectMake(-cornerImageWidth / 2, -cornerImageHeight / 2, cornerImageWidth, cornerImageHeight);
+    _topRightImageView.frame = CGRectMake(boundsSize.width - cornerImageWidth / 2, -cornerImageHeight / 2, cornerImageWidth, cornerImageHeight);
+    _bottomRightImageView.frame = CGRectMake(boundsSize.width - cornerImageWidth / 2, boundsSize.height - cornerImageHeight / 2, cornerImageWidth, cornerImageHeight);
+    _bottomLeftImageView.frame = CGRectMake(-cornerImageWidth / 2, boundsSize.height - cornerImageHeight / 2, cornerImageWidth, cornerImageHeight);
+    _leftMiddleImageView.frame = CGRectMake(-cornerImageWidth / 2, (boundsSize.height - cornerImageHeight) / 2, cornerImageWidth, cornerImageHeight);
+    _rightMiddleImageView.frame = CGRectMake(boundsSize.width - cornerImageWidth / 2, (boundsSize.height - cornerImageHeight) / 2, cornerImageWidth, cornerImageHeight);
     
     //grid lines - horizontal
     CGFloat thickness = 1.0f / self.traitCollection.displayScale;
@@ -155,6 +174,13 @@ static const CGFloat kTOCropOverLayerCornerWidth = 20.0f;
         frame.origin.x = (padding * (i+1)) + (thickness * i);
         lineView.frame = frame;
     }
+}
+
+- (nonnull UIImageView *)createNewImageView {
+    UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    imageView.contentMode = UIViewContentModeScaleAspectFit;
+    imageView.backgroundColor = [UIColor clearColor]; //Set to transparent
+    return imageView;
 }
 
 - (void)setGridHidden:(BOOL)hidden animated:(BOOL)animated
