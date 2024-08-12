@@ -856,6 +856,8 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 - (void)timerTriggered
 {
+    if ([self.delegate respondsToSelector:@selector(cropViewDidFinishOperation:)])
+        [self.delegate cropViewDidFinishOperation:self];
     [self setEditing:NO resetCropBox:YES animated:YES];
     [self.resetTimer invalidate];
     self.resetTimer = nil;

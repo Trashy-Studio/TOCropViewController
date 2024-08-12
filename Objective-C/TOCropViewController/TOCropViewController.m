@@ -709,6 +709,9 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
     self.canBeReset = NO;
 }
 
+- (void)cropViewDidFinishOperation:(TOCropView *)cropView
+{}
+
 #pragma mark - Presentation Handling -
 - (void)presentAnimatedFromParentViewController:(UIViewController *)viewController
                                        fromView:(UIView *)fromView
