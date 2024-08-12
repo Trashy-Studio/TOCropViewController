@@ -700,11 +700,13 @@ static const CGFloat kTOCropViewControllerToolbarHeight = 44.0f;
 - (void)cropViewDidBecomeResettable:(TOCropView *)cropView
 {
     self.toolbar.resetButtonEnabled = YES;
+    self.canBeReset = YES;
 }
 
 - (void)cropViewDidBecomeNonResettable:(TOCropView *)cropView
 {
     self.toolbar.resetButtonEnabled = NO;
+    self.canBeReset = NO;
 }
 
 #pragma mark - Presentation Handling -

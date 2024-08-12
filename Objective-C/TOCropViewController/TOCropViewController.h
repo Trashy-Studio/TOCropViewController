@@ -109,6 +109,12 @@
 @property (nonatomic, assign) CGFloat bottomInset;
 
 /**
+ A flag indicating the CropView has changes.
+ This allows us to show our own 'reset' UI.
+ */
+@property (nonatomic, assign) BOOL canBeReset;
+
+/**
  The view controller's delegate that will receive the resulting
  cropped image, as well as crop information.
  */
