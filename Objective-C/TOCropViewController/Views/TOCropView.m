@@ -1405,7 +1405,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         return;
     }
     
-    BOOL zoomOut = NO;
+    BOOL zoomOut = YES;
 
     // Passing in an empty size will revert back to the image aspect ratio
     if (aspectRatio.width < FLT_EPSILON && aspectRatio.height < FLT_EPSILON) {
