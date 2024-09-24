@@ -195,6 +195,10 @@ The minimum croping aspect ratio. If set, user is prevented from setting croppin
  */
 @property (nonatomic, assign) BOOL translucencyAlwaysHidden;
 
+@property (nonatomic, assign) BOOL flippedHorizontally;
+
+@property (nonatomic, assign) BOOL flippedVertically;
+
 ///*
 // if YES it will always show grid
 // if NO it will never show grid
@@ -296,6 +300,18 @@ The minimum croping aspect ratio. If set, user is prevented from setting croppin
  fills the entire crop view region
  */
 - (void)moveCroppedContentToCenterAnimated:(BOOL)animated;
+
+/**
+ Flips the image horizontally.
+ @param animated Whether the transition is animated.
+ */
+- (void)flipImageHorizontallyAnimated:(BOOL)animated;
+
+/**
+ Flips the image vertically.
+ @param animated Whether the transition is animated.
+ */
+- (void)flipImageVerticallyAnimated:(BOOL)animated;
 
 @end
 

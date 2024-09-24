@@ -108,6 +108,10 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
  has been properly set up in its parent. */
 @property (nonatomic, assign) BOOL initialSetupPerformed;
 
+@property (nonatomic, assign) BOOL horizontalFlip;
+@property (nonatomic, assign) BOOL verticalFlip;
+@property (nonatomic, assign) BOOL flipAnimationInProgress; // To prevent concurrent animations
+
 @end
 
 @implementation TOCropView
@@ -259,7 +263,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         self.restoreAngle = 0;
         self.cropBoxLastEditedAngle = self.angle;
     }
-    
+	
     //If an image crop frame was also specified before creation, apply it now
     if (!CGRectIsEmpty(self.restoreImageCropFrame)) {
         self.imageCropFrame = self.restoreImageCropFrame;
@@ -702,9 +706,11 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         _aspectRatio = CGSizeZero;
     }
     
-    if (animated == NO || self.angle != 0) {
+    if (animated == NO || self.angle != 0 || self.flippedHorizontally || self.flippedVertically) {
         //Reset all of the rotation transforms
         _angle = 0;
+        _flippedHorizontally = NO;
+        _flippedVertically = NO;
 
         //Set the scroll to 1.0f to reset the transform scale
         self.scrollView.zoomScale = 1.0f;
@@ -741,7 +747,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     //Perform an animation of the image zooming back out to its original size
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [UIView animateWithDuration:0.5f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:1.0f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+        [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:1.0f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
             [self layoutInitialImage];
         } completion:^(BOOL complete) {
             [self setSimpleRenderMode:NO animated:YES];
@@ -850,14 +856,14 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 {
     if (self.resetTimer)
         return;
-    
     self.resetTimer = [NSTimer scheduledTimerWithTimeInterval:self.cropAdjustingDelay target:self selector:@selector(timerTriggered) userInfo:nil repeats:NO];
 }
 
 - (void)timerTriggered
 {
-    if ([self.delegate respondsToSelector:@selector(cropViewDidFinishOperation:)])
+    if ([self.delegate respondsToSelector:@selector(cropViewDidFinishOperation:)]) {
         [self.delegate cropViewDidFinishOperation:self];
+    }
     [self setEditing:NO resetCropBox:YES animated:YES];
     [self.resetTimer invalidate];
     self.resetTimer = nil;
@@ -1125,7 +1131,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     self.foregroundContainerView.alpha = alpha;
     self.backgroundImageView.alpha = alpha;
     
-    [UIView animateWithDuration:0.4f animations:^{
+    [UIView animateWithDuration:0.3f animations:^{
         [self toggleTranslucencyViewVisible:!hidden];
         self.gridOverlayView.alpha = alpha;
     }];
@@ -1143,7 +1149,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     self.backgroundImageView.hidden = NO;
     self.backgroundImageView.alpha = beforeAlpha;
-    [UIView animateWithDuration:0.5f animations:^{
+    [UIView animateWithDuration:0.3f animations:^{
         self.backgroundImageView.alpha = toAlpha;
     }completion:^(BOOL complete) {
         if (hidden) {
@@ -1176,7 +1182,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     _gridOverlayHidden = gridOverlayHidden;
     self.gridOverlayView.alpha = gridOverlayHidden ? 1.0f : 0.0f;
     
-    [UIView animateWithDuration:0.4f animations:^{
+    [UIView animateWithDuration:0.3f animations:^{
         self.gridOverlayView.alpha = gridOverlayHidden ? 0.0f : 1.0f;
     }];
 }
@@ -1234,6 +1240,39 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
             [self rotateImageNinetyDegreesAnimated:NO clockwise:NO];
         }
     }
+}
+
+- (CGAffineTransform)imageViewTransform
+{
+    return CGAffineTransformScale(CGAffineTransformRotate(CGAffineTransformIdentity, self.angleInRadians), _flippedHorizontally ? -1 : 1, _flippedVertically ? -1 : 1);
+}
+
+- (void)flipImageHorizontallyAnimated:(BOOL)animated {
+    [self startResetTimer];
+    self.horizontalFlip = !self.horizontalFlip;
+    _flippedHorizontally = self.horizontalFlip;
+
+    [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+        CGAffineTransform transform = self.imageViewTransform;
+	    self.backgroundImageView.transform = transform;
+	    self.foregroundImageView.transform = transform;
+    } completion:^(BOOL complete) {}];
+    
+    [self checkForCanReset];
+}
+
+- (void)flipImageVerticallyAnimated:(BOOL)animated {
+    [self startResetTimer];
+    self.verticalFlip = !self.verticalFlip;
+    _flippedVertically = self.verticalFlip;
+
+    [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+        CGAffineTransform transform = self.imageViewTransform;
+	    self.backgroundImageView.transform = transform;
+	    self.foregroundImageView.transform = transform;
+    } completion:^(BOOL complete) {}];
+    
+    [self checkForCanReset];
 }
 
 #pragma mark - Editing Mode -
@@ -1361,7 +1400,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     [self matchForegroundToBackground];
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [UIView animateWithDuration:0.5f
+        [UIView animateWithDuration:0.3f
                               delay:0.0f
              usingSpringWithDamping:1.0f
               initialSpringVelocity:1.0f
@@ -1386,7 +1425,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         return;
     }
     
-    [UIView animateWithDuration:0.25f animations:^{
+    [UIView animateWithDuration:0.3f animations:^{
         [self toggleTranslucencyViewVisible:!simpleMode];
     }];
 }
@@ -1502,7 +1541,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         return;
     }
     
-    [UIView animateWithDuration:0.5f
+    [UIView animateWithDuration:0.3f
                           delay:0.0
          usingSpringWithDamping:1.0f
           initialSpringVelocity:0.7f
@@ -1518,13 +1557,10 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 - (void)rotateImageNinetyDegreesAnimated:(BOOL)animated clockwise:(BOOL)clockwise
 {
-    //Only allow one rotation animation at a time
-    if (self.rotateAnimationInProgress)
-        return;
-    
     //Cancel any pending resizing timers
+    [self startResetTimer];
+
     if (self.resetTimer) {
-        [self cancelResetTimer];
         [self setEditing:NO resetCropBox:YES animated:NO];
         
         self.cropBoxLastEditedAngle = self.angle;
@@ -1539,7 +1575,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     }
 
     _angle = newAngle;
-    
+
     //Convert the new angle to radians
     CGFloat angleInRadians = 0.0f;
     switch (newAngle) {
@@ -1551,9 +1587,9 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         case -270:  angleInRadians = -(M_PI + M_PI_2);  break;
         default:                                        break;
     }
-    
+
     // Set up the transformation matrix for the rotation
-    CGAffineTransform rotation = CGAffineTransformRotate(CGAffineTransformIdentity, angleInRadians);
+    CGAffineTransform rotation = self.imageViewTransform;
     
     //Work out how much we'll need to scale everything to fit to the new rotation
     CGRect contentBounds = self.contentBounds;
@@ -1652,7 +1688,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         self.translucencyView.hidden = YES;
         self.gridOverlayView.hidden = YES;
         
-        [UIView animateWithDuration:0.45f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+        [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
             CGAffineTransform transform = CGAffineTransformRotate(CGAffineTransformIdentity, clockwise ? M_PI_2 : -M_PI_2);
             transform = CGAffineTransformScale(transform, scale, scale);
             snapshotView.transform = transform;
@@ -1667,7 +1703,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
             
             self.translucencyView.alpha = 1.0f;
             
-            [UIView animateWithDuration:0.45f animations:^{
+            [UIView animateWithDuration:0.3f animations:^{
                 snapshotView.alpha = 0.0f;
                 self.backgroundContainerView.alpha = 1.0f;
                 self.gridOverlayView.alpha = 1.0f;
@@ -1703,10 +1739,13 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 - (void)checkForCanReset
 {
     BOOL canReset = NO;
-    
+
     if (self.angle != 0) { //Image has been rotated
         canReset = YES;
     }
+    else if (self.flippedHorizontally || self.flippedVertically) {
+		canReset = YES;
+	}
     else if (self.scrollView.zoomScale > self.scrollView.minimumZoomScale + FLT_EPSILON) { //image has been zoomed in
         canReset = YES;
     }
@@ -1746,6 +1785,21 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 - (BOOL)hasAspectRatio
 {
     return (self.aspectRatio.width > FLT_EPSILON && self.aspectRatio.height > FLT_EPSILON);
+}
+
+- (CGFloat)angleInRadians
+{
+    CGFloat angleInRadians = 0.0f;
+    switch (_angle) {
+        case 90:    angleInRadians = M_PI_2;            break;
+        case -90:   angleInRadians = -M_PI_2;           break;
+        case 180:   angleInRadians = M_PI;              break;
+        case -180:  angleInRadians = -M_PI;             break;
+        case 270:   angleInRadians = (M_PI + M_PI_2);   break;
+        case -270:  angleInRadians = -(M_PI + M_PI_2);  break;
+        default:                                        break;
+    }
+    return angleInRadians;
 }
 
 @end
