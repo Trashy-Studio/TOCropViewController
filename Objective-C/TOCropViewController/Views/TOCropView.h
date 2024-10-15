@@ -199,6 +199,8 @@ The minimum croping aspect ratio. If set, user is prevented from setting croppin
 
 @property (nonatomic, assign) BOOL flippedVertically;
 
+@property (nonatomic, assign) BOOL freezeUIUpdates;
+
 ///*
 // if YES it will always show grid
 // if NO it will never show grid

@@ -407,11 +407,12 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 {
     if (self.disableForgroundMatching)
         return;
-    
-    //We can't simply match the frames since if the images are rotated, the frame property becomes unusable
-    self.foregroundImageView.frame = [self.backgroundContainerView.superview
-                                      convertRect:self.backgroundContainerView.frame
-                                      toView:self.foregroundContainerView];
+    if (!self.freezeUIUpdates) {
+        //We can't simply match the frames since if the images are rotated, the frame property becomes unusable
+        self.foregroundImageView.frame = [self.backgroundContainerView.superview
+                                        convertRect:self.backgroundContainerView.frame
+                                        toView:self.foregroundContainerView];
+    }
 }
 
 - (void)updateCropBoxFrameWithGesturePoint:(CGPoint)point
@@ -1013,8 +1014,10 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     
     _cropBoxFrame = cropBoxFrame;
     
-    self.foregroundContainerView.frame = _cropBoxFrame; //set the clipping view to match the new rect
-    self.gridOverlayView.frame = _cropBoxFrame; //set the new overlay view to match the same region
+    if (!self.freezeUIUpdates) {
+        self.foregroundContainerView.frame = _cropBoxFrame; //set the clipping view to match the new rect
+        self.gridOverlayView.frame = _cropBoxFrame; //set the new overlay view to match the same region
+    }
     
     // If the mask layer is present, adjust its transform to fit the new container view size
     if (self.croppingStyle == TOCropViewCroppingStyleCircular) {
@@ -1037,7 +1040,9 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     CGSize size = self.scrollView.contentSize;
     size.width = floorf(size.width);
     size.height = floorf(size.height);
-    self.scrollView.contentSize = size;
+    if (!self.freezeUIUpdates) {
+        self.scrollView.contentSize = size;
+    }
     
     //IMPORTANT: Force the scroll view to update its content after changing the zoom scale
     self.scrollView.zoomScale = self.scrollView.zoomScale;
@@ -1625,7 +1630,11 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         snapshotView = [self.foregroundContainerView snapshotViewAfterScreenUpdates:NO];
         self.rotateAnimationInProgress = YES;
     }
-    
+
+    if (self.freezeUIUpdates) {
+        self.backgroundContainerView.hidden = YES;
+    }
+
     //Rotate the background image view, inside its container view
     self.backgroundImageView.transform = rotation;
     
@@ -1634,9 +1643,11 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
     self.backgroundContainerView.frame = (CGRect){CGPointZero, {containerSize.height, containerSize.width}};
     self.backgroundImageView.frame = (CGRect){CGPointZero, self.backgroundImageView.frame.size};
 
-    //Rotate the foreground image view to match
-    self.foregroundContainerView.transform = CGAffineTransformIdentity;
-    self.foregroundImageView.transform = rotation;
+    if (!self.freezeUIUpdates) {
+        //Rotate the foreground image view to match
+        self.foregroundContainerView.transform = CGAffineTransformIdentity;
+        self.foregroundImageView.transform = rotation;
+    }
     
     //Flip the content size of the scroll view to match the rotated bounds
     self.scrollView.contentSize = self.backgroundContainerView.frame.size;
@@ -1687,7 +1698,7 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
         self.foregroundContainerView.hidden = YES;
         self.translucencyView.hidden = YES;
         self.gridOverlayView.hidden = YES;
-        
+
         [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
             CGAffineTransform transform = CGAffineTransformRotate(CGAffineTransformIdentity, clockwise ? M_PI_2 : -M_PI_2);
             transform = CGAffineTransformScale(transform, scale, scale);
