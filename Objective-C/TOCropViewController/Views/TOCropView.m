@@ -1254,31 +1254,64 @@ typedef NS_ENUM(NSInteger, TOCropViewOverlayEdge) {
 
 - (void)flipImageHorizontallyAnimated:(BOOL)animated {
     [self startResetTimer];
-    self.horizontalFlip = !self.horizontalFlip;
-    _flippedHorizontally = self.horizontalFlip;
-
-    [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
-        CGAffineTransform transform = self.imageViewTransform;
-	    self.backgroundImageView.transform = transform;
-	    self.foregroundImageView.transform = transform;
-    } completion:^(BOOL complete) {}];
     
+    // Check the angle and adjust the flipping logic accordingly
+    if (self.angle == 90 || self.angle == 270) {
+        // For angles 90 or 270, flipping horizontally should act like a vertical flip
+        self.verticalFlip = !self.verticalFlip;
+        _flippedVertically = self.verticalFlip;
+    } else {
+        // Normal horizontal flip
+        self.horizontalFlip = !self.horizontalFlip;
+        _flippedHorizontally = self.horizontalFlip;
+    }
+
+    if (animated) {
+        // Apply the transformation with animation
+        [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+            CGAffineTransform transform = self.imageViewTransform;
+            self.backgroundImageView.transform = transform;
+            self.foregroundImageView.transform = transform;
+        } completion:^(BOOL complete) {}];
+    } else {
+        CGAffineTransform transform = self.imageViewTransform;
+        self.backgroundImageView.transform = transform;
+        self.foregroundImageView.transform = transform;
+    }
+
     [self checkForCanReset];
 }
 
 - (void)flipImageVerticallyAnimated:(BOOL)animated {
     [self startResetTimer];
-    self.verticalFlip = !self.verticalFlip;
-    _flippedVertically = self.verticalFlip;
-
-    [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
-        CGAffineTransform transform = self.imageViewTransform;
-	    self.backgroundImageView.transform = transform;
-	    self.foregroundImageView.transform = transform;
-    } completion:^(BOOL complete) {}];
     
+    // Check the angle and adjust the flipping logic accordingly
+    if (self.angle == 90 || self.angle == 270) {
+        // For angles 90 or 270, flipping vertically should act like a horizontal flip
+        self.horizontalFlip = !self.horizontalFlip;
+        _flippedHorizontally = self.horizontalFlip;
+    } else {
+        // Normal vertical flip
+        self.verticalFlip = !self.verticalFlip;
+        _flippedVertically = self.verticalFlip;
+    }
+
+    if (animated) {
+        // Apply the transformation with animation
+        [UIView animateWithDuration:0.3f delay:0.0f usingSpringWithDamping:1.0f initialSpringVelocity:0.8f options:UIViewAnimationOptionBeginFromCurrentState animations:^{
+            CGAffineTransform transform = self.imageViewTransform;
+            self.backgroundImageView.transform = transform;
+            self.foregroundImageView.transform = transform;
+        } completion:^(BOOL complete) {}];
+    } else {
+        CGAffineTransform transform = self.imageViewTransform;
+        self.backgroundImageView.transform = transform;
+        self.foregroundImageView.transform = transform;
+    }
+
     [self checkForCanReset];
 }
+
 
 #pragma mark - Editing Mode -
 - (void)startEditing
